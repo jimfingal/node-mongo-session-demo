@@ -3,7 +3,7 @@ node-mongo-session-demo
 
 A simple demo that allows a user to authenticate with Instagram, and stores that information in a session backed by MongoDB. The user can also log out, destroying the session and causing them to have to log in again.
 
-For this to work, you must have a registered Instagram account, and the following environment variables:
+For this to work, you must have a registered Instagram application, and the following environment variables:
 
     export INSTAGRAM_CLIENT_KEY=XXXXX
     export INSTAGRAM_CLIENT_SECRET=XXXX
