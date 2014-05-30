@@ -40,8 +40,7 @@ The middleware used is mongo-connect:
 The Mongo URI is made to localhost, or (untested) configured to the Heroku environment variables:
 
 ```javascript
-    var mongoUri = process.env.MONGOLAB_URI || process.env.MONGOHQ_URL || 
-    'mongodb://localhost/session-test';
+    var mongoUri = process.env.MONGOLAB_URI || process.env.MONGOHQ_URL || 'mongodb://localhost/session-test';
 ```
 
 A cookie secret is created:
