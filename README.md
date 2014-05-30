@@ -1,14 +1,7 @@
-instagram-oauth-demo
+node-mongo-session-demo
 =============
 
-### Database
-
-On OSX, can start Mongod with the following:
-
-    mongod --config /usr/local/etc/mongod.conf
-
-
-A very simple / dumb demo showing at a low level what happens when you authenticate with Instagram using OAuth. There is no error handling here.
+A simple demo that allows a user to authenticate with Instagram, and stores that information in a session backed by MongoDB. The user can also log out, destroying the session and causing them to have to log in again.
 
 For this to work, you must have a registered Instagram account, and the following environment variables:
 
@@ -23,90 +16,84 @@ To run:
 
     node web.js
 
+## Database
 
-## Client-side OAuth authentication flow
+Requires MongoDB.
 
-When you access via /clientside, the major logic happens in the client.
+On OSX, you can get mongo with homebrew:
 
-This version is very simple: you are redirected to Instagram's auth page; if authenticated it redirects you to:
+    brew install mongo
 
-    http://your-redirect-uri#access_token=216293235.f59def8.3bc6f0f6ecb54be6b303fc4c3b6ded58
+And start Mongod in the foreground with the following:
 
-
-
-## Server-side OAuth authentication flow
-
-When you access via /, all the intelligence happens on server.js.
+    mongod --config /usr/local/etc/mongod.conf
 
 
-A simplified overview of what happens here: http://instagram.com/developer/authentication/
+## Salient Tech Excerpts
 
-*Step 1: Click to Login*
-
-The base URL should take you to a screen with a single "Authenticate" button.
-
-When you click this, you should be redirected to Instagram's Auth site to confirm access
+The middleware used is mongo-connect:
 
 ```javascript
-    app.get('/authenticate', function(req, res) {
-      var url = "https://api.instagram.com/oauth/authorize/?client_id=" + 
-                    CLIENT_ID +
-                    "&redirect_uri=" + 
-                    REDIRECT_URL + 
-                    "&response_type=code";
-
-      res.redirect(url);
-    });
+    MongoStore = require('connect-mongo')(express);
 ```
 
-*Step 2: Confirm Access*
-
-This is an Instagram page. You can confirm access or deny. If you confirm, you go on to next step.
-
-*Step 3: Receive Code / Get Access Token*
-
-If approved, you are redirected to the URL you have registered with Instagram, with a "code" parameter added to the redirect. You can post this along with your ID and secret to get 
+The Mongo URI is made to localhost, or (untested) configured to the Heroku environment variables:
 
 ```javascript
-    app.get('/oauthredirect', function(req, res) {
-        
-      var code = req.query.code;
-      
-      console.log("Code: " + code);
-      
-      var options = {
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        redirect_uri: REDIRECT_URL,
-        grant_type: "authorization_code",
-        code: code
-      };
-      
-      var url = 'https://api.instagram.com/oauth/access_token';
-      
-      request.post(url, {form: options}, function (e, r, body) {
-        serverio.sockets.emit('response', body);
-      });
-      
-      res.render('code', { title: 'Oauth Response' });
-    });
+    var mongoUri = process.env.MONGOLAB_URI || process.env.MONGOHQ_URL || 
+    'mongodb://localhost/session-test';
 ```
 
-In this code, once the access token is received, the websocket sends the information to the client. (Doing it like this is not a typical use-case, but it displays what is going on.)
+A cookie secret is created:
 
-*Step 4: Display results*
-
-In this demo, when we get the message from the server, we render it to the page:
 
 ```javascript
-    socket.on('response', function (json_text) {
-      var json = $.parseJSON(json_text);
-      $('#access_token').html("<h2>Access token</h2><p>" + json['access_token'] + "</p>");
-      $('#username').html("<h2>Username</h2><p>" + json['user']['username'] + "</p>");
-      $('#full_name').html("<h2>Full Name</h2><p>" + json['user']['full_name'] + "</p>");
-      $('#user_id').html("<h2>User ID</h2><p>" + json['user']['id'] + "</p>");
-      $('#pic').html("<h2>Profile Picture</h2><p><img src='" + json['user']['profile_picture'] + "'></p>");
-    });
+    var cookie_secret = crypto.createHash('sha1').update(new Date().getTime() + "").digest('hex');
 ```
+
+Middleware connected:
+
+```javascript
+    app.use(express.cookieParser(cookie_secret));
+    app.use(express.session({
+      secret: cookie_secret,
+      store: new MongoStore({
+          url: mongoUri
+      })
+    }));
+```
+
+When the access token is retrieved it is set in the session:
+
+```javascript
+      req.session['auth_response'] = auth_response;
+```
+
+If we go back to the base page, we can consult the session to decide whetehr to go straight to the display page, or give the user an opportunity to log in again:
+
+```javascript
+  if (auth_response && auth_response['access_token']) {
+
+    res.render('code', { title: 'Oauth Response',
+            username: auth_response['user']['username'],
+            id: auth_response['user']['id'],
+            profile_picture: auth_response['user']['profile_picture'],
+            full_name: auth_response['user']['full_name']});
+
+  } else {
+    res.render('index', { title: 'Oauth Test' });
+  }
+```
+
+If we click the logout button, we destroy the session:
+
+```javascript
+  app.get('/logout', function(req, res) {
+    req.session.destroy(function() {
+      res.render('index', { title: 'Oauth Test' });
+    });
+  });
+```
+
 
 
