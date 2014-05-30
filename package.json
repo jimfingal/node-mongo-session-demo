@@ -1,7 +1,7 @@
 {
-  "name": "instagram-oauth-demo",
+  "name": "node-mongo-session-demo",
   "version": "0.0.1",
-  "description": "Simple demo of authenticating with Oauth in node",
+  "description": "Simple demo of using mongo to store session data",
   "private": true,
   "devDependencies": {
     "nodemon": "^1.1.1"
@@ -12,9 +12,7 @@
     "express": "~3.3.4",
     "jade": "~0.34.0",
     "oauth": "^0.9.12",
-    "request": "^2.36.0",
-    "requirejs": "2.1.11",
-    "socket.io": "0.9.17"
+    "request": "^2.36.0"
   },
   "engines": {
     "node": "0.10.26",
@@ -26,10 +24,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jimmytheleaf/node-skeleton.git"
+    "url": "https://github.com/jimmytheleaf/node-mongo-session-demo.git"
   },
   "author": "jimmytheleaf",
   "bugs": {
-    "url": "https://github.com/jimmytheleaf/node-skeleton/issues"
+    "url": "https://github.com/jimmytheleaf/node-mongo-session-demo/issues"
   }
 }

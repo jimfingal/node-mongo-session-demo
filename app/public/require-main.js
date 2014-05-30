@@ -3,8 +3,7 @@ require.config({
     'paths': {
       'jquery': 'bower_components/jquery/dist/jquery.min',
       'jquery-ui': 'bower_components/jquery-ui/ui/jquery-ui',
-      'bootstrap': 'bower_components/bootstrap/dist/js/bootstrap.min',
-      'socket.io' : 'bower_components/socket.io-client/dist/socket.io.min',
+      'bootstrap': 'bower_components/bootstrap/dist/js/bootstrap.min'
     },
     'shim': {
         'jquery': {
@@ -19,10 +18,9 @@ require.config({
     },
 });
 
-require(['socket.io', 'jquery', 'jquery-ui', 'bootstrap'],
-  function(io, $) {
+require(['jquery', 'jquery-ui', 'bootstrap'],
+  function($) {
 
-    var loc = window.location;
     var url = location.protocol + '//' + location.hostname + ':' + location.port;
 
     $("#login").click(function() {
@@ -32,14 +30,6 @@ require(['socket.io', 'jquery', 'jquery-ui', 'bootstrap'],
     $("#logout").click(function() {
         window.location = url + '/logout';
     });
-
-
-    var hash = $(location).attr('hash');
-
-    if (hash) {
-      var parts = hash.split('=');
-      $('#access_token').html("<h2>Access token</h2><p>" + parts[1] + "</p>");
-    };
 
 });
 

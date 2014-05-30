@@ -11,7 +11,6 @@
     "requirejs": "latest",
     "jquery": "latest",
     "jquery-ui": "latest",
-    "bootstrap": "~3.1.1",
-    "socket.io-client": "~0.9.16"
+    "bootstrap": "~3.1.1"
   }
 }
