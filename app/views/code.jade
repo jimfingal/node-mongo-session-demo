@@ -8,9 +8,13 @@ html
 
   body
     div#container
+      button(type="button", class="btn btn-primary")#logout Logout
       h1 Logged in as:
       div#pic
-      div#username
-      div#full_name
-      div#user_id
-      div#access_token
+        img(src='#{profile_picture}')
+      h2 Username
+      p #{username}
+      h2 Full Name: 
+      p #{full_name}
+      h2 ID: 
+      p #{id}

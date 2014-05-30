@@ -1,6 +1,13 @@
 instagram-oauth-demo
 =============
 
+### Database
+
+On OSX, can start Mongod with the following:
+
+    mongod --config /usr/local/etc/mongod.conf
+
+
 A very simple / dumb demo showing at a low level what happens when you authenticate with Instagram using OAuth. There is no error handling here.
 
 For this to work, you must have a registered Instagram account, and the following environment variables:

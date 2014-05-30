@@ -3,13 +3,20 @@ var express = require('express'),
   path = require('path'),
   request = require('request'),
   io = require('socket.io'),
-  fs = require('fs');
+  fs = require('fs'),
+  crypto = require('crypto'),
+  MongoStore = require('connect-mongo')(express);
 
 var options = {
   key: fs.readFileSync('./app/keys/key.pem'),
   cert: fs.readFileSync('./app/keys/cert.pem')
 };
 
+var mongoUri = process.env.MONGOLAB_URI || process.env.MONGOHQ_URL || 
+    'mongodb://localhost/session-test';
+
+// One-off secret generation
+var cookie_secret = crypto.createHash('sha1').update(new Date().getTime() + "").digest('hex');
 
 var CLIENT_ID = process.env.INSTAGRAM_CLIENT_KEY;
 var CLIENT_SECRET = process.env.INSTAGRAM_CLIENT_SECRET;
@@ -23,27 +30,45 @@ app.configure(function() {
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
   app.use(express.bodyParser());
+  app.use(express.cookieParser(cookie_secret));
+  app.use(express.session({
+    secret: cookie_secret,
+    store: new MongoStore({
+        url: mongoUri
+    })
+  }));
   app.use(app.router);
   app.use(express.static(path.join(__dirname, 'public')));
 });
 
 app.get('/', function(req, res) {
-  res.render('index', { title: 'Oauth Test' });
+
+  console.log(req.session['auth_response']);
+  var auth_response = req.session['auth_response']
+
+  if (auth_response && auth_response['access_token']) {
+
+    res.render('code', { title: 'Oauth Response',
+            username: auth_response['user']['username'],
+            id: auth_response['user']['id'],
+            profile_picture: auth_response['user']['profile_picture'],
+            full_name: auth_response['user']['full_name']});
+
+  } else {
+    res.render('index', { title: 'Oauth Test' });
+  }
+
 });
 
-app.get('/clientid', function(req, res) {
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ client_id: CLIENT_ID, redirect_uri: REDIRECT_URI }));
-});
 
-app.get('/clientside', function(req, res) {
-  res.render('clientside', { title: 'Oauth Test' });
+app.get('/logout', function(req, res) {
+  req.session.destroy(function() {
+    res.render('index', { title: 'Oauth Test' });
+  });
 });
-
 
 var server = https.createServer(options, app);
 var serverio = io.listen(server).set('log level', 2);
-
 
 app.get('/authenticate', function(req, res) {
   var url = "https://api.instagram.com/oauth/authorize/?client_id=" + 
@@ -75,19 +100,36 @@ app.get('/oauthredirect', function(req, res) {
     var url = 'https://api.instagram.com/oauth/access_token';
 
     request.post(url, {form: options}, function (e, r, body) {
-      serverio.sockets.emit('response', body);
+      
+      var auth_response = JSON.parse(body);
+      
+      req.session['auth_response'] = auth_response;
+      
+      if (auth_response['error_type']) {
+        res.render('code', { title: 'Oauth Response', 
+            username: "Error",
+            id: "Error",
+            profile_picture: "Error",
+            full_name: "Error"});
+      } else {
+        res.render('code', { title: 'Oauth Response',
+            username: auth_response['user']['username'],
+            id: auth_response['user']['id'],
+            profile_picture: auth_response['user']['profile_picture'],
+            full_name: auth_response['user']['full_name']
+        });
+      }
+
     });
 
   }
 
-  res.render('code', { title: 'Oauth Response' });
 });
 
 
 serverio.sockets.on('connection', function(socket) {  
   console.log("Connected to socket: " + socket);
 });
-
 
 
 server.listen(app.get('port'));
